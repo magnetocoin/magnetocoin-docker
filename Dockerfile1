@@ -1,0 +1,53 @@
+############################################################
+# Dockerfile to build magnetocoind container images
+# Based on Ubuntu
+############################################################
+
+FROM ubuntu:16.04
+LABEL maintainer.0="cheezcharmer <cheezcharmer@cheezcharmer.org>"
+
+RUN apt-get update \
+    && apt-get install git gosu -y \ 
+    && apt-get install build-essential libtool autotools-dev automake pkg-config libssl-dev libevent-dev bsdmainutils -y \ 
+    && apt-get install libboost-system-dev libboost-filesystem-dev libboost-chrono-dev libboost-program-options-dev libboost-test-dev libboost-thread-dev -y \ 
+    && apt-get install libboost-all-dev -y \  
+    && apt-get install software-properties-common -y \ 
+    && add-apt-repository ppa:bitcoin/bitcoin \ 
+    && apt-get update -y \ 
+    && apt-get install libdb4.8-dev libdb4.8++-dev -y \ 
+    && apt-get install libminiupnpc-dev -y \ 
+    && apt-get install libzmq3-dev -y \ 
+    && apt-get install libqt5gui5 libqt5core5a libqt5dbus5 qttools5-dev qttools5-dev-tools libprotobuf-dev protobuf-compiler -y 
+RUN adduser magnetocoin --disabled-password
+    
+
+
+WORKDIR /home/magnetocoin
+RUN mkdir magnetocoin
+RUN  mkdir bin src
+RUN echo PATH=\"\$HOME/bin:\$PATH\" >> .bash_profile
+
+WORKDIR /home/magnetocoin/src
+RUN git clone https://github.com/magnetocoin/magnetocoin-core.git magnetocoin \
+&& cd magnetocoin/src \
+&& make -f makefile.unix \
+&& cp -f magnetocoind /home/magnetocoin/bin/ 
+
+WORKDIR	 /home/magnetocoin
+RUN mkdir .magnetocoin \
+&& touch magneotcoin.conf \
+&& echo addnode=66.29.134.173 >> magnetocoin.conf \
+&& echo rpcuser=magneto >> magnetocoin.conf \
+&& echo rpcpassword= changeme >> magnetocoin.conf \
+&& echo rpcallowip=0.0.0.0 >> magnetocoin.conf \
+&& echo rpcport=9999 >> magnetocoin.conf \
+&& echo server=1 >> magnetocoin.conf \
+&& echo listen=1 >> magnetocoin.conf \
+&& echo daemon=1 >> magnetocoin.conf \
+&& cp -f magnetocoin.conf .magnetocoin/ \
+&& chown -R magnetocoin /home/magnetocoin/ 
+
+ENV HOME /home/magnetocoin
+EXPOSE 9550 9999
+USER magnetocoin
+CMD ["/home/magnetocoin/bin/magnetocoind"]
